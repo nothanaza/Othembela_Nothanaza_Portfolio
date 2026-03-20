@@ -86,82 +86,59 @@ sections.forEach(section => {
 });
 
 // Contact Form Handling
-// Configuration: enable EmailJS and fill the IDs if you want client-side sending without opening user's mail client.
-// Create an account at https://www.emailjs.com/, create an email service and a template, then set EMAILJS_ENABLED = true
-// and fill EMAILJS_USER_ID, EMAILJS_SERVICE_ID and EMAILJS_TEMPLATE_ID below.
-const EMAILJS_ENABLED = true; // set to true after filling IDs
-const EMAILJS_USER_ID = 'user_7xiku28'; // e.g. 'user_xxx'
-const EMAILJS_SERVICE_ID = 'service_9x9p6fi'; // e.g. 'service_xxx'
-const EMAILJS_TEMPLATE_ID = 'template_7xiku28'; // e.g. 'template_xxx'
-
-// Initialize EmailJS if available
-if (window.emailjs && EMAILJS_ENABLED && EMAILJS_USER_ID) {
-    try { emailjs.init(EMAILJS_USER_ID); } catch (err) { /* ignore init errors until configured */ }
-}
-
 const contactForm = document.getElementById('contactForm');
-contactForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+const formStatus = document.getElementById('formStatus');
 
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const subject = document.getElementById('subject').value.trim() || 'Portfolio Inquiry';
-    const message = document.getElementById('message').value.trim();
+if (contactForm) {
+    contactForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-    // Prefer EmailJS when configured
-    if (EMAILJS_ENABLED && window.emailjs && EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID) {
-        const templateParams = {
-            from_name: name || 'Website visitor',
-            from_email: email || '',
-            subject: subject,
-            message: message || ''
+        const submitButton = contactForm.querySelector('button[type="submit"]');
+        const buttonText = submitButton.querySelector('.btn-text');
+        const formData = {
+            name: document.getElementById('name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            subject: document.getElementById('subject').value.trim(),
+            message: document.getElementById('message').value.trim()
         };
 
+        submitButton.disabled = true;
+        buttonText.textContent = 'Sending...';
+        formStatus.textContent = '';
+
         try {
-            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-            alert('Message sent — thank you!');
+            if (window.location.protocol === 'file:') {
+                throw new Error('Open this site through the backend server at http://localhost:3000, not by double-clicking index.html.');
+            }
+
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            });
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to send message.');
+            }
+
             contactForm.reset();
-            return;
-        } catch (err) {
-            console.error('EmailJS send error:', err);
-            alert('Failed to send via EmailJS. Falling back to opening your email client.');
-            // fallthrough to mailto fallback
+            formStatus.textContent = 'Your message has been sent successfully.';
+        } catch (error) {
+            console.error('Contact form submission failed:', error);
+            if (error instanceof TypeError) {
+                formStatus.textContent = 'The contact backend is not reachable. Start the Node server and open the site at http://localhost:3000.';
+            } else {
+                formStatus.textContent = error.message || 'Something went wrong. Please try again.';
+            }
+        } finally {
+            submitButton.disabled = false;
+            buttonText.textContent = 'Send Message';
         }
-    }
-
-    // Mailto fallback (opens user's mail client)
-    const to = 'nothanazao@gmail.com';
-    const bodyLines = [];
-    if (name) bodyLines.push(`Name: ${name}`);
-    if (email) bodyLines.push(`Reply-to: ${email}`);
-    if (message) bodyLines.push('', 'Message:', message);
-    const body = bodyLines.join('\n');
-    const mailto = `mailto:${to}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    window.location.href = mailto;
-
-    setTimeout(() => {
-        alert('Your email client should open shortly. If it did not, please email nothanazao@gmail.com directly.');
-        contactForm.reset();
-    }, 500);
-});
-    // If you want to use PHP for form handling, you would do something like:
-    // fetch('contact.php', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(formData)
-    // })
-    // .then(response => response.json())
-    // .then(data => {
-    //     alert(data.message);
-    //     contactForm.reset();
-    // })
-    // .catch(error => {
-    //     console.error('Error:', error);
-    //     alert('An error occurred. Please try again.');
-    // });
+    });
+}
 
 // Add parallax effect to hero section
 window.addEventListener('scroll', () => {
@@ -177,7 +154,6 @@ window.addEventListener('scroll', () => {
     let current = '';
     sections.forEach(section => {
         const sectionTop = section.offsetTop;
-        const sectionHeight = section.clientHeight;
         if (scrollY >= (sectionTop - 200)) {
             current = section.getAttribute('id');
         }
