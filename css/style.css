@@ -640,30 +640,22 @@ section {
     transition: width 1s ease-in-out;
 }
 
-/* Contact Section 
+/* Contact Section */
 .contact-grid {
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 2rem;
 }
 
-*/
-
 .contact-info {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    align-items: center;
-    text-align: center;
 }
 
 .contact-card {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 0.75rem;
-    width:500px;
+    gap: 1rem;
     padding: 1.5rem;
     background: rgba(30, 41, 59, 0.5);
     border: 1px solid rgba(71, 85, 105, 0.5);
